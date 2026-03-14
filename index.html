@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>存錢記錄 Pro Max 3.0</title>
+  <meta name="theme-color" content="#0f1117" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="存錢記錄" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <style>
+    :root{
+      --bg:#0f1117;--card:#171b24;--card2:#1e2430;--line:#2d3647;--text:#f5f7fb;--muted:#9ba7ba;
+      --green:#3ddc97;--red:#ff6b6b;--blue:#5bc0ff;--yellow:#f6c945;--orange:#ff9f43;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif}
+    body{padding-bottom:110px}
+    button,input,select,textarea{font:inherit}
+    .app{max-width:840px;margin:0 auto;padding:env(safe-area-inset-top) 14px calc(env(safe-area-inset-bottom) + 16px)}
+    .header{position:sticky;top:0;z-index:20;background:rgba(15,17,23,.94);backdrop-filter:blur(12px);padding:10px 0 12px}
+    .title{font-size:26px;font-weight:900}.sub{font-size:13px;color:var(--muted);margin-top:4px}
+    .month-nav{display:flex;gap:10px;align-items:center;margin-top:14px}.nav-btn,.top-btn,.small-btn,.delete-btn,.footer-btn,.mini-btn{border:none;border-radius:14px}
+    .nav-btn{width:48px;height:48px;background:var(--card);color:var(--text);font-size:20px;border:1px solid var(--line)}
+    .month-label{flex:1;text-align:center;background:var(--card);padding:12px;border:1px solid var(--line);border-radius:16px;font-weight:800}
+    .top-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+    .top-btn{padding:12px;background:linear-gradient(135deg,var(--green),#7ef0bf);font-weight:800;color:#08120c}
+    .top-btn.secondary{background:var(--card);color:var(--text);border:1px solid var(--line)}
+    .panel{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;margin-top:14px}
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    .stat,.home-card,.alloc-card,.envelope-card{background:var(--card2);border:1px solid var(--line);border-radius:16px;padding:14px}
+    .k{font-size:12px;color:var(--muted)}.v{margin-top:6px;font-size:24px;font-weight:900}
+    .green{color:var(--green)} .red{color:var(--red)} .blue{color:var(--blue)} .yellow{color:var(--yellow)} .orange{color:var(--orange)}
+    .progress{height:10px;background:#252d3b;border-radius:999px;overflow:hidden;margin-top:8px}.bar{height:100%;width:0;background:linear-gradient(90deg,var(--green),var(--blue))}
+    .section-title{font-size:15px;font-weight:900;margin-bottom:10px}.mini{font-size:12px;color:var(--muted);line-height:1.6}
+    .small-btn,.mini-btn{padding:10px 12px;font-weight:800;background:var(--card2);color:var(--text);border:1px solid var(--line)}
+    .small-btn.greenish{background:rgba(61,220,151,.14);color:var(--green);border-color:rgba(61,220,151,.28)}.small-btn.redish{background:rgba(255,107,107,.12);color:#ff9797;border-color:rgba(255,107,107,.24)}
+    .actions-row,.export-actions,.today-actions,.fixed-meta-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .chartbox{background:var(--card2);border:1px solid var(--line);border-radius:16px;padding:12px}
+    canvas{width:100%;height:180px;display:block}
+    .fixed-cards{display:grid;gap:10px}
+    .fixed-card{background:var(--card2);border:1px solid var(--line);border-radius:16px;padding:12px}
+    .fixed-card-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:10px}
+    .fixed-card-side{display:flex;flex-direction:column;align-items:flex-end;gap:8px;min-width:110px}
+    .fixed-card-title{font-size:15px;font-weight:900}
+    .pill,.badge{font-size:12px;color:var(--muted);background:#252d3b;border:1px solid var(--line);padding:6px 10px;border-radius:999px;display:inline-flex;align-items:center;gap:6px}
+    .badge.good{color:#9ff0c8;border-color:rgba(61,220,151,.25);background:rgba(61,220,151,.10)}
+    .badge.warn{color:#ffd7a0;border-color:rgba(255,159,67,.25);background:rgba(255,159,67,.10)}
+    .badge.danger{color:#ffb3b3;border-color:rgba(255,107,107,.25);background:rgba(255,107,107,.10)}
+    .fixed-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .field-label{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .day-card{background:var(--card);border:1px solid var(--line);border-radius:18px;margin-top:12px;overflow:hidden}
+    .day-card.today-jump{outline:2px solid rgba(61,220,151,.95);box-shadow:0 0 0 4px rgba(61,220,151,.15)}
+    .day-head{display:flex;justify-content:space-between;gap:10px;padding:14px;cursor:pointer}
+    .day-left{display:flex;gap:12px;align-items:center}.num{width:46px;height:46px;border-radius:14px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;border:1px solid var(--line)}
+    .meta{font-size:13px;color:var(--muted)}.amt{font-weight:900;text-align:right}.day-body{display:none;border-top:1px solid var(--line);padding:14px}.day-card.open .day-body{display:block}
+    .row-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:6px 0 10px}
+    .entry{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:10px}.entry-grid{display:grid;grid-template-columns:1.15fr .9fr .8fr auto;gap:8px;align-items:center}.entry-grid.expense{grid-template-columns:1.15fr .9fr auto}
+    .delete-btn{width:40px;height:40px;background:#3a1d24;color:#ffb3b3}.tag{display:inline-block;margin-left:6px;border-radius:999px;padding:3px 8px;font-size:11px;background:#2a3242;color:#d6deec}
+    .footer{position:fixed;left:0;right:0;bottom:0;padding:10px 14px calc(env(safe-area-inset-bottom) + 12px);background:rgba(15,17,23,.96);backdrop-filter:blur(12px);border-top:1px solid var(--line);display:flex;gap:10px}
+    .footer-btn,label.footer-btn{flex:1;text-align:center;padding:12px;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:14px;font-weight:800}
+    .hidden{display:none}
+    .search-input{margin-top:8px}.search-results{display:grid;gap:8px;margin-top:10px}
+    .result-item{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:10px}
+    .result-item .title{font-size:14px;font-weight:800}.result-item .meta{font-size:12px;color:var(--muted);margin-top:4px}
+    .list-note{background:rgba(255,159,67,.12);border:1px solid rgba(255,159,67,.25);border-radius:14px;padding:12px;color:#ffd7a0}
+    .alloc-grid,.envelope-grid,.home-grid,.month-close-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+    .goal-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end;margin-top:12px}
+    .goal-row button{padding:10px 12px}
+    .warning-box{background:rgba(255,107,107,.10);border:1px solid rgba(255,107,107,.25);border-radius:14px;padding:12px;color:#ffb3b3}
+    .ok-box{background:rgba(61,220,151,.10);border:1px solid rgba(61,220,151,.25);border-radius:14px;padding:12px;color:#9ff0c8}
+    .fixed-paid-toggle{display:flex;align-items:center;justify-content:flex-end;gap:6px;font-size:12px;color:var(--muted);background:rgba(61,220,151,.08);border:1px solid rgba(61,220,151,.18);padding:6px 10px;border-radius:999px}
+    .fixed-paid-toggle input,.check-row input{width:auto}
+    .check-row{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;color:var(--muted)}
+    .trend-caption{margin-top:8px;font-size:12px;color:var(--muted)}
+    .entry.collapsed-entry{padding:10px 12px}
+    .entry-summary{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .entry-summary-left{display:flex;flex-direction:column;gap:4px;min-width:0}
+    .entry-summary-title{font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .entry-summary-sub{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .entry-summary-amount{font-weight:900}
+    .entry-summary-actions{display:flex;gap:8px;align-items:center}
+    .percent-small{font-size:12px;color:var(--muted);font-weight:600;margin-left:4px}
+    .alloc-mini{margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06)}
+    .alloc-mini-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+    .alloc-mini-item{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:10px;padding:6px 8px}
+    .alloc-mini-item strong{font-weight:800}
+    .export-overlay{position:fixed; inset:0; background:rgba(0,0,0,.75); display:none; align-items:center; justify-content:center; z-index:9999; padding:20px}
+    .export-box{width:min(680px,100%); max-height:80vh; overflow:auto; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:16px}
+    .export-box textarea{width:100%; min-height:260px; margin-top:10px; font-size:12px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+    @media(max-width:700px){.envelope-grid{grid-template-columns:1fr 1fr}}
+    @media(max-width:560px){
+      .entry-grid{grid-template-columns:1fr 1fr;grid-template-areas:"a a" "b c" "d d"}
+      .entry-grid .a{grid-area:a}.entry-grid .b{grid-area:b}.entry-grid .c{grid-area:c}.entry-grid .d{grid-area:d}
+      .entry-grid.expense{grid-template-columns:1fr 1fr;grid-template-areas:"a a" "b c"}.entry-grid.expense .a{grid-area:a}.entry-grid.expense .b{grid-area:b}.entry-grid.expense .c{grid-area:c}
+      .fixed-grid,.grid,.goal-row,.home-grid,.month-close-grid,.alloc-mini-grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="title">💰 存錢記錄 Pro Max 3.0 PWA</div>
+    <div class="sub">可安裝版｜ID 固定支出｜四信封來源可重算｜資料版本與自動 migration</div>
+    <div class="month-nav">
+      <button class="nav-btn" onclick="changeMonth(-1)">‹</button>
+      <div class="month-label" id="monthLabel"></div>
+      <button class="nav-btn" onclick="changeMonth(1)">›</button>
+    </div>
+    <div class="mini" style="margin-top:10px">iPhone 安裝方式：用 Safari 開啟部署網址 → 分享 → 加入主畫面。</div>
+    <div class="top-actions">
+      <button class="top-btn" onclick="downloadBackup()">一鍵備份</button>
+      <button class="top-btn secondary" onclick="jumpToToday()">回到今天</button>
+    </div>
+    <div class="actions-row" style="margin-top:10px">
+      <button class="small-btn redish" onclick="hardResetThisVersion()">清空這版所有資料</button>
+      <button class="small-btn" onclick="recalcAllData()">重算全部資料</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="grid">
+      <div class="stat"><div class="k">本月收入</div><div class="v green" id="statIncome">$0</div></div>
+      <div class="stat"><div class="k">本月支出</div><div class="v red" id="statExpense">$0</div></div>
+      <div class="stat"><div class="k">本月淨額</div><div class="v blue" id="statNet">$0</div></div>
+      <div class="stat"><div class="k">本月存款</div><div class="v yellow" id="statSave">$0</div></div>
+    </div>
+    <div class="goal-row">
+      <div>
+        <div class="k">自訂存錢目標</div>
+        <input id="goalInput" type="number" inputmode="numeric" placeholder="例如 300000">
+      </div>
+      <button class="small-btn greenish" onclick="saveGoal()">儲存目標</button>
+    </div>
+    <div style="margin-top:12px">
+      <div class="mini" id="goalText">存錢目標預測：—</div>
+      <div class="progress"><div class="bar" id="goalBar"></div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="section-title">首頁總覽</div>
+    <div class="home-grid">
+      <div class="home-card">
+        <div class="k">本月固定支出完成</div>
+        <div class="v blue" id="fixedDoneStat">0 / 0</div>
+        <div class="mini" id="fixedDoneText">已完成 0 筆</div>
+      </div>
+      <div class="home-card">
+        <div class="k">本月待繳金額</div>
+        <div class="v orange" id="fixedPendingAmt">$0</div>
+        <div class="mini" id="fixedPendingText">目前無待繳</div>
+      </div>
+    </div>
+    <div id="envelopeWarnings" style="margin-top:10px"></div>
+  </div>
+
+  <div class="panel">
+    <div class="section-title">月結摘要</div>
+    <div class="month-close-grid">
+      <div class="home-card"><div class="k">本月總收入</div><div class="v green" id="closeIncome">$0</div></div>
+      <div class="home-card"><div class="k">本月總支出</div><div class="v red" id="closeExpense">$0</div></div>
+      <div class="home-card"><div class="k">本月結餘</div><div class="v blue" id="closeNet">$0</div></div>
+      <div class="home-card"><div class="k">下月起始摘要</div><div class="mini" id="nextMonthSummary">四信封會延續到下月</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="section-title">四信封跨月累積</div>
+    <div class="mini">四信封改為來源可重算：會依全部收入與已完成固定支出重新計算，降低歷史修改後的累積誤差。</div>
+    <div class="envelope-grid">
+      <div class="envelope-card"><div class="k">固定支出信封 <span class="percent-small">57%</span></div><div class="v red" id="envFixed">$0</div></div>
+      <div class="envelope-card"><div class="k">存款信封 <span class="percent-small">20%</span></div><div class="v green" id="envSave">$0</div></div>
+      <div class="envelope-card"><div class="k">生活費信封 <span class="percent-small">15%</span></div><div class="v yellow" id="envLife">$0</div></div>
+      <div class="envelope-card"><div class="k">備用金信封 <span class="percent-small">8%</span></div><div class="v blue" id="envReserve">$0</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="section-title">本月尚未繳的固定支出</div>
+    <div id="dueList"></div>
+  </div>
+
+  <div class="panel">
+    <div class="section-title">每月固定支出</div>
+    <div id="fixedRows" class="fixed-cards"></div>
+    <div class="actions-row">
+      <button class="small-btn greenish" onclick="addFixedExpense()">＋ 新增固定支出</button>
+      <button class="small-btn" onclick="applyFixedExpenses()">套用到本月</button>
+      <button class="small-btn" onclick="resetFixedDefaults()">恢復預設</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="section-title">收入圖表</div>
+    <div class="chartbox">
+      <canvas id="incomeChart" width="600" height="220"></canvas>
+      <div class="mini">本月各收入來源比較</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="section-title">支出圖表</div>
+    <div class="chartbox">
+      <canvas id="expenseChart" width="600" height="220"></canvas>
+      <div class="mini">本月各支出分類比較</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="section-title">收支結餘趨勢圖</div>
+    <div class="chartbox">
+      <canvas id="trendChart" width="600" height="220"></canvas>
+      <div class="trend-caption">顯示最近 6 個月每月淨額趨勢</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="section-title">平日 / 週末分析</div>
+    <div class="mini" id="weekdayAnalysis"></div>
+  </div>
+
+  <div class="panel">
+    <div class="section-title">搜尋紀錄</div>
+    <input id="searchInput" class="search-input" type="text" placeholder="搜尋項目、備註、分類，例如：房租 / 駐唱 / 飲食">
+    <div id="searchResults" class="search-results"></div>
+  </div>
+
+  <div id="dayList"></div>
+</div>
+
+<div class="footer">
+  <button class="footer-btn" onclick="downloadBackup()">匯出備份</button>
+  <button class="footer-btn" onclick="downloadCSV()">匯出 CSV</button>
+  <label class="footer-btn">匯入還原<input id="restoreInput" type="file" accept=".json,application/json" class="hidden"></label>
+</div>
+
+<div class="export-overlay" id="exportOverlay">
+  <div class="export-box">
+    <div class="section-title" id="exportTitle">匯出內容</div>
+    <div class="mini" id="exportHint">請手動複製</div>
+    <textarea id="exportText"></textarea>
+    <div class="export-actions">
+      <button class="small-btn greenish" onclick="copyExportText()">複製內容</button>
+      <button class="small-btn" onclick="closeExportOverlay()">關閉</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DB_KEY='finance_pro_max_v300_pwa';
+const DB_VERSION=3;
+const DEFAULT_GOAL=300000;
+const SPLIT={fixed:0.57,save:0.20,life:0.15,reserve:0.08};
+const INCOME_CATEGORIES=['駐唱','商演','婚禮','小費','告別式','其他'];
+const EXPENSE_CATEGORIES=['住家','債務','雅凡貸款','電信','家裡支出','飲食','交通','學習','娛樂','購物','家庭','送禮&捐贈','醫療&健康','金融&保險','稅金','其他雜項','電子發票手機條碼'];
+const WEEKDAYS=['日','一','二','三','四','五','六'];
+const DEFAULT_FIXED=[
+  {id:'fx_rent',name:'房租',amount:16500,type:'monthly',day:10,category:'住家',note:'每月10號'},
+  {id:'fx_sister',name:'妹妹貸款',amount:16000,type:'monthly',day:20,category:'雅凡貸款',note:'每月20號'},
+  {id:'fx_debt',name:'欠債還款',amount:15000,type:'manual',day:'',category:'債務',note:'約定日'},
+  {id:'fx_phone',name:'通信費',amount:2000,type:'monthly',day:5,category:'電信',note:'固定'},
+  {id:'fx_util',name:'水電費',amount:3000,type:'bimonthly',day:15,category:'家裡支出',note:'雙月'}
+];
+let db=loadDB(), now=new Date(), currentYear=now.getFullYear(), currentMonth=now.getMonth()+1;
+const itemCollapsedState = {};
+ensureDefaults();
+migrateDB();
+recalcAllData(false);
+
+function uid(prefix='id'){ return prefix+'_'+Math.random().toString(36).slice(2,10); }
+function ymKey(y,m){return `${y}-${String(m).padStart(2,'0')}`;}
+function fmt(n){return '$'+Math.round(Number(n||0)).toLocaleString('zh-TW');}
+function daysInMonth(y,m){return new Date(y,m,0).getDate();}
+function currentGoal(){ return Number((db.settings && db.settings.goal) || DEFAULT_GOAL); }
+function currentAlertLife(){ return Number((db.settings && db.settings.alertLife) || 3000); }
+function currentAlertReserve(){ return Number((db.settings && db.settings.alertReserve) || 3000); }
+function formatDateTimeNow(){
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth()+1).padStart(2,'0');
+  const d = String(now.getDate()).padStart(2,'0');
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+  return `${y}-${m}-${d} ${hh}:${mm}`;
+}
+function calcEnvelopeSplit(amount){
+  const n = Number(amount || 0);
+  return { fixed:n*SPLIT.fixed, save:n*SPLIT.save, life:n*SPLIT.life, reserve:n*SPLIT.reserve };
+}
+function loadDB(){
+  try{
+    const raw=localStorage.getItem(DB_KEY);
+    return raw?JSON.parse(raw):{version:DB_VERSION, months:{}, fixedExpenses:[], settings:{goal:DEFAULT_GOAL,alertLife:3000,alertReserve:3000}, envelopes:{fixed:0,save:0,life:0,reserve:0}};
+  }catch(e){
+    return {version:DB_VERSION, months:{}, fixedExpenses:[], settings:{goal:DEFAULT_GOAL,alertLife:3000,alertReserve:3000}, envelopes:{fixed:0,save:0,life:0,reserve:0}};
+  }
+}
+function saveDB(){ localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+function ensureDefaults(){
+  if(!db.version) db.version = DB_VERSION;
+  if(!db.months) db.months={};
+  if(!db.settings) db.settings={goal:DEFAULT_GOAL,alertLife:3000,alertReserve:3000};
+  if(typeof db.settings.goal==='undefined') db.settings.goal=DEFAULT_GOAL;
+  if(typeof db.settings.alertLife==='undefined') db.settings.alertLife=3000;
+  if(typeof db.settings.alertReserve==='undefined') db.settings.alertReserve=3000;
+  if(!db.envelopes) db.envelopes={fixed:0,save:0,life:0,reserve:0};
+  if(!Array.isArray(db.fixedExpenses)||db.fixedExpenses.length===0){
+    db.fixedExpenses=JSON.parse(JSON.stringify(DEFAULT_FIXED));
+  }
+  db.fixedExpenses = db.fixedExpenses.map(item=>{
+    const clone = {...item};
+    if(!clone.id) clone.id = uid('fx');
+    if(clone.name==='妹妹貸款'){ clone.type='monthly'; clone.day=20; clone.note='每月20號'; clone.category='雅凡貸款'; }
+    return clone;
+  });
+  saveDB();
+}
+function migrateDB(){
+  const v = Number(db.version || 1);
+  if(v < 2){
+    db.fixedExpenses = (db.fixedExpenses||[]).map(x=> ({...x, id:x.id||uid('fx')}));
+  }
+  if(v < 3){
+    // migrate fixed expense entries from name-based to id-based
+    Object.values(db.months||{}).forEach(month=>{
+      Object.values(month.days||{}).forEach(day=>{
+        (day.expenses||[]).forEach(e=>{
+          if(e.fixed && !e.fixedId && e.fixedName){
+            const match=(db.fixedExpenses||[]).find(f=>f.name===e.fixedName);
+            if(match) e.fixedId = match.id;
+          }
+        });
+      });
+    });
+  }
+  db.version = DB_VERSION;
+  saveDB();
+}
+function hardResetThisVersion(){
+  if(!confirm('確定要清空這一版的所有資料嗎？')) return;
+  localStorage.removeItem(DB_KEY);
+  location.reload();
+}
+function getMonthData(y,m){ const k=ymKey(y,m); if(!db.months[k]) db.months[k]={days:{}, fixedApplied:false}; return db.months[k]; }
+function getDayData(y,m,d){
+  const month=getMonthData(y,m);
+  if(!month.days[d]) month.days[d]={incomes:[], expenses:[], note:''};
+  if(!month.days[d].incomes) month.days[d].incomes=[];
+  if(!month.days[d].expenses) month.days[d].expenses=[];
+  return month.days[d];
+}
+function itemKey(day, type, index){ return `${day}_${type}_${index}`; }
+function isItemCollapsed(day, type, index){ return !!itemCollapsedState[itemKey(day,type,index)]; }
+function setItemCollapsed(day, type, index, collapsed){ itemCollapsedState[itemKey(day,type,index)] = collapsed; }
+function toggleItemCollapsed(day, type, index){
+  const k=itemKey(day,type,index);
+  itemCollapsedState[k]=!itemCollapsedState[k];
+  render();
+  reopenDay(day);
+}
+function sumIncome(day){ return (day.incomes||[]).reduce((s,x)=>s+Number(x.amount||0),0); }
+function sumExpense(day){
+  return (day.expenses||[]).reduce((s,x)=>{
+    if(x.fixed) return s + (x.paid ? Number(x.amount||0) : 0);
+    return s + Number(x.amount||0);
+  },0);
+}
+function shouldApplyFixed(x, month){ if(x.type==='manual') return false; if(x.type==='bimonthly') return month%2===0; return true; }
+function escapeHtml(str){ return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function recalcAllData(showAlert=true){
+  const env = {fixed:0,save:0,life:0,reserve:0};
+  Object.values(db.months||{}).forEach(month=>{
+    Object.values(month.days||{}).forEach(day=>{
+      (day.incomes||[]).forEach(x=>{
+        const split = calcEnvelopeSplit(x.amount||0);
+        env.fixed += split.fixed; env.save += split.save; env.life += split.life; env.reserve += split.reserve;
+      });
+      (day.expenses||[]).forEach(e=>{
+        if(e.fixed && e.paid){
+          env.fixed -= Number(e.amount||0);
+        }
+      });
+    });
+  });
+  db.envelopes = env;
+  saveDB();
+  updateSummaryOnly();
+  if(showAlert) alert('已依來源重算四信封與摘要');
+}
+
+function saveGoal(){
+  const val = Number(document.getElementById('goalInput').value || 0);
+  db.settings.goal = val > 0 ? val : DEFAULT_GOAL;
+  saveDB();
+  updateSummaryOnly();
+}
+function changeMonth(delta){
+  currentMonth += delta;
+  if(currentMonth>12){ currentMonth=1; currentYear++; }
+  if(currentMonth<1){ currentMonth=12; currentYear--; }
+  render();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function toggleDay(d){ const el=document.getElementById('day_'+d); if(el) el.classList.toggle('open'); }
+function reopenDay(d){ setTimeout(()=>{ const el=document.getElementById('day_'+d); if(el) el.classList.add('open'); }, 30); }
+function addIncome(d){
+  const day=getDayData(currentYear,currentMonth,d);
+  day.incomes.push({id:uid('inc'), category:'駐唱', amount:0, memo:''});
+  setItemCollapsed(d,'income',day.incomes.length-1,false);
+  saveDB(); render(); reopenDay(d);
+}
+function addExpense(d){
+  const day=getDayData(currentYear,currentMonth,d);
+  day.expenses.push({id:uid('exp'), category:'飲食', amount:0, memo:'', fixed:false});
+  setItemCollapsed(d,'expense',day.expenses.length-1,false);
+  saveDB(); render(); reopenDay(d);
+}
+function deleteIncome(d,i){
+  const day=getDayData(currentYear,currentMonth,d);
+  day.incomes.splice(i,1);
+  saveDB(); recalcAllData(false); render(); reopenDay(d);
+}
+function deleteExpense(d,i){
+  const day=getDayData(currentYear,currentMonth,d);
+  day.expenses.splice(i,1);
+  saveDB(); recalcAllData(false); render(); reopenDay(d);
+}
+function updateIncome(d,i,f,v){
+  const item=getDayData(currentYear,currentMonth,d).incomes[i];
+  item[f]=f==='amount'?Number(v||0):v;
+  const hasData=(item.category&&String(item.category).trim()!=='') || Number(item.amount||0)>0 || (item.memo&&String(item.memo).trim()!=='');
+  if(hasData) setItemCollapsed(d,'income',i,true);
+  saveDB(); recalcAllData(false); render(); reopenDay(d);
+}
+function updateExpense(d,i,f,v){
+  const item=getDayData(currentYear,currentMonth,d).expenses[i];
+  item[f]=f==='amount'?Number(v||0):v;
+  const hasData=(item.category&&String(item.category).trim()!=='') || Number(item.amount||0)>0 || (item.memo&&String(item.memo).trim()!=='');
+  if(hasData) setItemCollapsed(d,'expense',i,true);
+  saveDB(); recalcAllData(false); render(); reopenDay(d);
+}
+function updateNote(d,v){ getDayData(currentYear,currentMonth,d).note=v; saveDB(); }
+function jumpToToday(){
+  const t=new Date();
+  currentYear=t.getFullYear();
+  currentMonth=t.getMonth()+1;
+  render();
+  const tryJump=(attempt=0)=>{
+    const card=document.getElementById(`day_${t.getDate()}`);
+    if(!card){ if(attempt<10) setTimeout(()=>tryJump(attempt+1),120); return; }
+    card.classList.add('open');
+    card.classList.add('today-jump');
+    const body=card.querySelector('.day-body') || card;
+    body.scrollIntoView({behavior:'smooth', block:'start'});
+    setTimeout(()=>card.classList.remove('today-jump'),1600);
+  };
+  setTimeout(()=>tryJump(0),150);
+}
+function monthSummary(y,m){
+  let income=0,expense=0,saveAmt=0,incomeByType={},expenseByType={},weekdayIncome=0,weekendIncome=0,weekdayDays=0,weekendDays=0;
+  for(let d=1; d<=daysInMonth(y,m); d++){
+    const day=getDayData(y,m,d), inc=sumIncome(day), exp=sumExpense(day), dow=new Date(y,m-1,d).getDay();
+    income+=inc; expense+=exp; saveAmt+=inc*SPLIT.save;
+    (day.incomes||[]).forEach(x=>{const k=x.category||'其他'; incomeByType[k]=(incomeByType[k]||0)+Number(x.amount||0);});
+    (day.expenses||[]).forEach(x=>{ if(x.fixed && !x.paid) return; const k=x.category||'其他'; expenseByType[k]=(expenseByType[k]||0)+Number(x.amount||0); });
+    if(inc>0){ if(dow===0||dow===6){weekendIncome+=inc; weekendDays++;} else {weekdayIncome+=inc; weekdayDays++;} }
+  }
+  return {income,expense,net:income-expense,saveAmt,incomeByType,expenseByType,weekdayIncome,weekendIncome,weekdayDays,weekendDays};
+}
+function avgMonthlySave(){
+  const keys=Object.keys(db.months||{});
+  if(!keys.length) return 0;
+  let total=0;
+  keys.forEach(k=>{
+    const [y,m]=k.split('-').map(Number);
+    total += monthSummary(y,m).saveAmt;
+  });
+  return total / keys.length;
+}
+function getFixedStatsForMonth(y,m){
+  const month=getMonthData(y,m);
+  const applicable=db.fixedExpenses.filter(x=>shouldApplyFixed(x,m));
+  let done=0, pendingAmt=0, pendingCount=0;
+  applicable.forEach(x=>{
+    let matched=null;
+    Object.values(month.days||{}).forEach(day=>{
+      (day.expenses||[]).forEach(e=>{ if(e.fixed && e.fixedId===x.id) matched=e; });
+    });
+    if(matched && matched.paid) done += 1;
+    else { pendingAmt += Number(x.amount||0); pendingCount += 1; }
+  });
+  return {total:applicable.length, done, pendingAmt, pendingCount};
+}
+function renderEnvelopeWarnings(){
+  const fixedStats=getFixedStatsForMonth(currentYear,currentMonth);
+  const warnings=[];
+  if(db.envelopes.fixed < fixedStats.pendingAmt) warnings.push(`<div class="warning-box">固定支出信封餘額 ${fmt(db.envelopes.fixed)}，低於本月待繳固定支出 ${fmt(fixedStats.pendingAmt)}。</div>`);
+  else warnings.push(`<div class="ok-box">固定支出信封目前可覆蓋本月待繳固定支出。</div>`);
+  if(db.envelopes.life < currentAlertLife()) warnings.push(`<div class="warning-box">生活費信封目前 ${fmt(db.envelopes.life)}，低於提醒門檻 ${fmt(currentAlertLife())}。</div>`);
+  if(db.envelopes.reserve < currentAlertReserve()) warnings.push(`<div class="warning-box">備用金信封目前 ${fmt(db.envelopes.reserve)}，低於提醒門檻 ${fmt(currentAlertReserve())}。</div>`);
+  document.getElementById('envelopeWarnings').innerHTML=warnings.join('');
+}
+function showMonthCloseSummary(){
+  const s=monthSummary(currentYear,currentMonth);
+  document.getElementById('closeIncome').textContent=fmt(s.income);
+  document.getElementById('closeExpense').textContent=fmt(s.expense);
+  document.getElementById('closeNet').textContent=fmt(s.net);
+  document.getElementById('closeNet').className='v '+(s.net>=0?'blue':'red');
+  document.getElementById('nextMonthSummary').innerHTML=`固定支出信封 ${fmt(db.envelopes.fixed)}｜存款信封 ${fmt(db.envelopes.save)}<br>生活費信封 ${fmt(db.envelopes.life)}｜備用金信封 ${fmt(db.envelopes.reserve)}`;
+}
+function roundRect(ctx,x,y,w,h,r){ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();}
+function drawBarChart(canvasId, dataObj, emptyText){
+  const canvas=document.getElementById(canvasId), ctx=canvas.getContext('2d'), rect=canvas.getBoundingClientRect(), dpr=window.devicePixelRatio||1;
+  canvas.width=Math.floor(rect.width*dpr); canvas.height=Math.floor(220*dpr); ctx.setTransform(1,0,0,1,0,0); ctx.scale(dpr,dpr);
+  const w=rect.width,h=220; ctx.clearRect(0,0,w,h);
+  const rows=Object.entries(dataObj).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  ctx.fillStyle='#9ba7ba'; ctx.font='12px sans-serif';
+  if(!rows.length){ctx.fillText(emptyText,16,32); return;}
+  const max=Math.max(...rows.map(x=>x[1]),1), left=78, top=18, barH=18, gap=14;
+  rows.forEach((row,i)=>{
+    const y=top+i*(barH+gap), name=row[0], val=row[1], bw=(w-left-28)*(val/max);
+    ctx.fillStyle='#9ba7ba'; ctx.fillText(name,12,y+13);
+    ctx.fillStyle='#2a3242'; roundRect(ctx,left,y,w-left-20,barH,9); ctx.fill();
+    const g=ctx.createLinearGradient(left,0,left+bw,0); g.addColorStop(0,canvasId==='incomeChart'?'#3ddc97':'#ff6b6b'); g.addColorStop(1,'#5bc0ff'); ctx.fillStyle=g;
+    roundRect(ctx,left,y,Math.max(8,bw),barH,9); ctx.fill();
+    ctx.fillStyle='#f5f7fb'; ctx.fillText(fmt(val),Math.max(left+8,left+bw-52),y+13);
+  });
+}
+function drawTrendChart(){
+  const canvas=document.getElementById('trendChart'), ctx=canvas.getContext('2d'), rect=canvas.getBoundingClientRect(), dpr=window.devicePixelRatio||1;
+  canvas.width=Math.floor(rect.width*dpr); canvas.height=Math.floor(220*dpr); ctx.setTransform(1,0,0,1,0,0); ctx.scale(dpr,dpr);
+  const w=rect.width,h=220; ctx.clearRect(0,0,w,h);
+  const points=[];
+  let y=currentYear, m=currentMonth;
+  for(let i=5;i>=0;i--){
+    let yy=y, mm=m-i; while(mm<=0){mm+=12;yy-=1;}
+    const sum=monthSummary(yy,mm);
+    points.push({label:`${yy}/${String(mm).padStart(2,'0')}`, value:sum.net});
+  }
+  const values=points.map(p=>p.value), max=Math.max(...values,0,1), min=Math.min(...values,0), span=max-min||1;
+  const left=40,right=12,top=16,bottom=28,cw=w-left-right,ch=h-top-bottom;
+  ctx.strokeStyle='#27303a'; ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){ const yLine=top+(ch/4)*i; ctx.beginPath(); ctx.moveTo(left,yLine); ctx.lineTo(left+cw,yLine); ctx.stroke(); }
+  const zeroY=top+ch-((0-min)/span)*ch;
+  ctx.strokeStyle='rgba(255,255,255,.2)'; ctx.beginPath(); ctx.moveTo(left,zeroY); ctx.lineTo(left+cw,zeroY); ctx.stroke();
+  ctx.strokeStyle='#5bc0ff'; ctx.lineWidth=2; ctx.beginPath();
+  points.forEach((p,i)=>{ const x=left+(cw/(points.length-1||1))*i, yPos=top+ch-((p.value-min)/span)*ch; if(i===0) ctx.moveTo(x,yPos); else ctx.lineTo(x,yPos); });
+  ctx.stroke();
+  points.forEach((p,i)=>{ const x=left+(cw/(points.length-1||1))*i, yPos=top+ch-((p.value-min)/span)*ch;
+    ctx.fillStyle=p.value>=0?'#3ddc97':'#ff6b6b'; ctx.beginPath(); ctx.arc(x,yPos,4,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#9ba7ba'; ctx.font='11px sans-serif'; ctx.textAlign='center'; ctx.fillText(p.label.slice(5),x,h-10);
+  });
+}
+
+function toggleFixedPaid(day,index,checked){
+  const entry=getDayData(currentYear,currentMonth,day).expenses[index];
+  if(!entry) return;
+  entry.paid=checked;
+  entry.completedAt=checked?formatDateTimeNow():'';
+  saveDB(); recalcAllData(false); render(); reopenDay(day);
+}
+function addFixedExpense(){
+  db.fixedExpenses.push({id:uid('fx'),name:'新項目',amount:0,type:'monthly',day:1,category:'其他雜項',note:''});
+  saveDB(); renderFixedTable();
+}
+function updateFixedExpense(i,field,val){
+  const item=db.fixedExpenses[i];
+  item[field]=(field==='amount'||field==='day')?(val===''?'':Number(val||0)):val;
+  saveDB();
+}
+function deleteFixedExpense(i){ db.fixedExpenses.splice(i,1); saveDB(); renderFixedTable(); renderDueList(); }
+function resetFixedDefaults(){ if(!confirm('確定要恢復預設固定支出嗎？')) return; db.fixedExpenses=JSON.parse(JSON.stringify(DEFAULT_FIXED)); saveDB(); renderFixedTable(); renderDueList(); recalcAllData(false); }
+
+function applyFixedExpenses(){
+  const month=getMonthData(currentYear,currentMonth);
+  let added=0;
+  db.fixedExpenses.forEach(x=>{
+    if(!shouldApplyFixed(x,currentMonth)) return;
+    const exists=Object.values(month.days||{}).some(day=>(day.expenses||[]).some(e=>e.fixed && e.fixedId===x.id));
+    if(exists) return;
+    const day=Math.max(1,Math.min(daysInMonth(currentYear,currentMonth), Number(x.day||1)));
+    getDayData(currentYear,currentMonth,day).expenses.push({
+      id:uid('exp'),
+      category:x.category||'其他雜項',
+      amount:Number(x.amount||0),
+      memo:`[固定支出] ${x.name}${x.note? '｜'+x.note : ''}`,
+      fixed:true,
+      fixedId:x.id,
+      paid:false,
+      completedAt:''
+    });
+    added++;
+  });
+  month.fixedApplied=true;
+  saveDB(); render();
+  alert(added>0 ? `已新增 ${added} 筆固定支出到本月。` : '本月可套用的固定支出都已存在。');
+}
+function renderDueList(){
+  const wrap=document.getElementById('dueList');
+  const month=getMonthData(currentYear,currentMonth);
+  const today=(new Date().getFullYear()===currentYear&&new Date().getMonth()+1===currentMonth)?new Date().getDate():1;
+  const items=db.fixedExpenses.filter(x=>shouldApplyFixed(x,currentMonth)).map(x=>{
+    const due=Number(x.day||1);
+    let matchedDay=null, matchedIndex=-1, matchedEntry=null;
+    Object.keys(month.days||{}).forEach(d=>{
+      (month.days[d].expenses||[]).forEach((e,idx)=>{ if(e.fixed && e.fixedId===x.id){ matchedDay=Number(d); matchedIndex=idx; matchedEntry=e; } });
+    });
+    return {...x,due,matchedDay,matchedIndex,matchedEntry};
+  }).sort((a,b)=>a.due-b.due);
+
+  if(!items.length){ wrap.innerHTML='<div class="list-note">本月目前沒有自動固定支出。</div>'; return; }
+  wrap.innerHTML=items.map(x=>{
+    if(!x.matchedEntry) return `<div class="list-note">待套用｜${escapeHtml(x.name)}｜${fmt(x.amount)}｜預定 ${x.due} 日</div>`;
+    const paid=!!x.matchedEntry.paid;
+    const status=paid?'已完成':(x.due<today?'已逾期':'待繳');
+    return `<div class="list-note">${status}｜${escapeHtml(x.name)}｜${fmt(x.amount)}｜預定 ${x.due} 日
+      <div class="check-row"><input type="checkbox" ${paid?'checked':''} onchange="toggleFixedPaid(${x.matchedDay},${x.matchedIndex},this.checked)"><span>標記已完成</span></div>
+    </div>`;
+  }).join('');
+}
+function renderFixedTable(){
+  const month=getMonthData(currentYear,currentMonth);
+  document.getElementById('fixedRows').innerHTML=db.fixedExpenses.map((x,i)=>{
+    let matchedDay=null, matchedIndex=-1, matchedEntry=null;
+    if(shouldApplyFixed(x,currentMonth)){
+      Object.keys(month.days||{}).forEach(d=>{
+        (month.days[d].expenses||[]).forEach((e,idx)=>{ if(e.fixed && e.fixedId===x.id){ matchedDay=Number(d); matchedIndex=idx; matchedEntry=e; } });
+      });
+    }
+    let paidBlock='';
+    if(shouldApplyFixed(x,currentMonth)){
+      if(matchedEntry) paidBlock=`<label class="fixed-paid-toggle"><input type="checkbox" ${matchedEntry.paid?'checked':''} onchange="toggleFixedPaid(${matchedDay},${matchedIndex},this.checked)"><span>${matchedEntry.paid?'已完成':'勾選完成'}</span></label>`;
+      else paidBlock=`<div class="mini">本月未套用，按上方「套用到本月」後可勾選完成</div>`;
+    }else paidBlock=`<div class="mini">此類型本月不自動套用</div>`;
+
+    return `
+    <div class="fixed-card">
+      <div class="fixed-card-head">
+        <div class="fixed-card-title">${escapeHtml(x.name||'固定支出')}</div>
+        <div class="fixed-card-side">
+          <div class="pill">${x.type==='monthly'?'每月':x.type==='bimonthly'?'雙月':'手動確認'}</div>
+          ${paidBlock}
+          ${matchedEntry && matchedEntry.paid && matchedEntry.completedAt ? `<div class="badge good">完成時間 ${matchedEntry.completedAt}</div>` : ``}
+        </div>
+      </div>
+      <div class="fixed-meta-row">
+        ${matchedEntry && matchedEntry.paid ? `<div class="badge good">本月已完成</div>` : shouldApplyFixed(x,currentMonth) ? `<div class="badge warn">本月未完成</div>` : `<div class="badge">本月不適用</div>`}
+        ${matchedEntry && !matchedEntry.paid ? `<div class="badge danger">尚未計入支出</div>` : ``}
+      </div>
+      <div class="fixed-grid">
+        <div><div class="field-label">項目名稱</div><input value="${escapeHtml(x.name||'')}" oninput="updateFixedExpense(${i},'name',this.value)"></div>
+        <div><div class="field-label">金額</div><input type="number" inputmode="numeric" value="${Number(x.amount||0)}" oninput="updateFixedExpense(${i},'amount',this.value)"></div>
+        <div><div class="field-label">類型</div><select onchange="updateFixedExpense(${i},'type',this.value)"><option value="monthly" ${x.type==='monthly'?'selected':''}>每月</option><option value="bimonthly" ${x.type==='bimonthly'?'selected':''}>雙月</option><option value="manual" ${x.type==='manual'?'selected':''}>手動確認</option></select></div>
+        <div><div class="field-label">日期</div><input type="number" inputmode="numeric" min="1" max="31" placeholder="日期" value="${x.day===''?'':x.day}" oninput="updateFixedExpense(${i},'day',this.value)"></div>
+        <div><div class="field-label">分類</div><select onchange="updateFixedExpense(${i},'category',this.value)">${EXPENSE_CATEGORIES.map(c=>`<option ${c===x.category?'selected':''}>${c}</option>`).join('')}</select></div>
+        <div><div class="field-label">說明</div><input value="${escapeHtml(x.note||'')}" oninput="updateFixedExpense(${i},'note',this.value)"></div>
+      </div>
+      <div class="actions-row"><button class="small-btn redish" onclick="deleteFixedExpense(${i})">刪除這筆</button></div>
+    </div>`;
+  }).join('');
+}
+function updateSummaryOnly(){
+  const s=monthSummary(currentYear,currentMonth);
+  document.getElementById('statIncome').textContent=fmt(s.income);
+  document.getElementById('statExpense').textContent=fmt(s.expense);
+  document.getElementById('statNet').textContent=fmt(s.net);
+  document.getElementById('statNet').className='v '+(s.net>=0?'blue':'red');
+  document.getElementById('statSave').textContent=fmt(s.saveAmt);
+  document.getElementById('envFixed').textContent=fmt(db.envelopes.fixed);
+  document.getElementById('envSave').textContent=fmt(db.envelopes.save);
+  document.getElementById('envLife').textContent=fmt(db.envelopes.life);
+  document.getElementById('envReserve').textContent=fmt(db.envelopes.reserve);
+
+  const goal=currentGoal();
+  const total=db.envelopes.save||0, pct=Math.min(100,total/goal*100), avg=avgMonthlySave(), remain=Math.max(0,goal-total);
+  document.getElementById('goalBar').style.width=pct+'%';
+  document.getElementById('goalText').textContent='存錢目標預測：目標 '+fmt(goal)+'，存款信封已累積 '+fmt(total)+'，還差 '+fmt(remain)+'，'+(avg>0?'依照目前平均存款速度，約 '+(remain/avg).toFixed(1)+' 個月可達標。':'目前資料不足，先開始記錄後會自動預測。');
+  document.getElementById('goalInput').value=goal;
+
+  const fixedStats=getFixedStatsForMonth(currentYear,currentMonth);
+  document.getElementById('fixedDoneStat').textContent=`${fixedStats.done} / ${fixedStats.total}`;
+  document.getElementById('fixedDoneText').textContent=fixedStats.total ? `已完成 ${fixedStats.done} 筆，未完成 ${fixedStats.total-fixedStats.done} 筆` : '本月沒有固定支出';
+  document.getElementById('fixedPendingAmt').textContent=fmt(fixedStats.pendingAmt);
+  document.getElementById('fixedPendingText').textContent=fixedStats.pendingCount ? `尚有 ${fixedStats.pendingCount} 筆待繳` : '目前無待繳';
+
+  const wd=s.weekdayDays?s.weekdayIncome/s.weekdayDays:0, we=s.weekendDays?s.weekendIncome/s.weekendDays:0;
+  document.getElementById('weekdayAnalysis').innerHTML='平日有收入天數：'+s.weekdayDays+' 天，平均 '+fmt(wd)+'<br>週末有收入天數：'+s.weekendDays+' 天，平均 '+fmt(we)+'<br>判讀：'+(wd===we?'平日與週末差不多':(wd>we?'平日收入較強':'週末收入較強'));
+  drawBarChart('incomeChart', s.incomeByType, '本月還沒有收入資料');
+  drawBarChart('expenseChart', s.expenseByType, '本月還沒有支出資料');
+  drawTrendChart();
+  renderDueList();
+  renderEnvelopeWarnings();
+  showMonthCloseSummary();
+}
+async function downloadBackup(){
+  const content=JSON.stringify(db,null,2);
+  try{
+    if(navigator.clipboard && window.isSecureContext){ await navigator.clipboard.writeText(content); alert('備份內容已複製到剪貼簿。請貼到檔案或記事本存成 .json。'); return; }
+  }catch(e){}
+  openExportOverlay('備份 JSON', content, '請全選複製後貼到記事本，存成 .json 檔。');
+}
+async function downloadCSV(){
+  let rows=[['年月','日期','類型','分類','金額','備註']];
+  Object.keys(db.months||{}).sort().forEach(ym=>{
+    const month=db.months[ym];
+    Object.keys(month.days||{}).sort((a,b)=>Number(a)-Number(b)).forEach(d=>{
+      const day=month.days[d];
+      (day.incomes||[]).forEach(x=>rows.push([ym,d,'收入',x.category||'',x.amount||0,x.memo||'']));
+      (day.expenses||[]).forEach(x=>rows.push([ym,d,'支出',x.category||'',x.amount||0,x.memo||'']));
+    });
+  });
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  try{
+    if(navigator.clipboard && window.isSecureContext){ await navigator.clipboard.writeText(csv); alert('CSV 內容已複製到剪貼簿。'); return; }
+  }catch(e){}
+  openExportOverlay('CSV 匯出內容', csv, '請全選複製後貼到記事本或試算表。');
+}
+function openExportOverlay(title, content, hint){
+  const overlay=document.getElementById('exportOverlay');
+  document.getElementById('exportTitle').textContent=title;
+  document.getElementById('exportHint').textContent=hint||'';
+  const area=document.getElementById('exportText');
+  area.value=content;
+  overlay.style.display='flex';
+  setTimeout(()=>{ area.focus(); area.select(); },50);
+}
+function closeExportOverlay(){ document.getElementById('exportOverlay').style.display='none'; }
+async function copyExportText(){
+  const area=document.getElementById('exportText'); area.focus(); area.select();
+  try{
+    if(navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(area.value);
+    else document.execCommand('copy');
+    alert('已複製到剪貼簿');
+  }catch(e){ alert('請手動全選複製'); }
+}
+function runSearch(){
+  const q=(document.getElementById('searchInput').value||'').trim().toLowerCase();
+  const wrap=document.getElementById('searchResults');
+  if(!q){ wrap.innerHTML='<div class="mini">輸入關鍵字後，會搜尋所有月份的收入與支出紀錄。</div>'; return; }
+  let results=[];
+  Object.keys(db.months||{}).forEach(ym=>{
+    const m=db.months[ym];
+    Object.keys(m.days||{}).forEach(d=>{
+      const day=m.days[d];
+      (day.incomes||[]).forEach(x=>{ const text=[x.category,x.memo,x.amount].join(' ').toLowerCase(); if(text.includes(q)) results.push({ym,d,type:'收入',category:x.category,amount:x.amount,memo:x.memo||''}); });
+      (day.expenses||[]).forEach(x=>{ const text=[x.category,x.memo,x.amount].join(' ').toLowerCase(); if(text.includes(q)) results.push({ym,d,type:'支出',category:x.category,amount:x.amount,memo:x.memo||''}); });
+    });
+  });
+  results=results.slice(0,50);
+  wrap.innerHTML=results.length ? results.map(r=>`<div class="result-item"><div class="title">${r.ym}｜${r.d} 日｜${r.type}｜${escapeHtml(r.category||'')}</div><div class="meta">${fmt(r.amount||0)}${r.memo? '｜'+escapeHtml(r.memo):''}</div></div>`).join('') : '<div class="mini">沒有找到符合的紀錄。</div>';
+}
+
+function render(){
+  document.getElementById('monthLabel').textContent=`${currentYear} 年 ${currentMonth} 月`;
+  renderFixedTable();
+  updateSummaryOnly();
+  runSearch();
+
+  const days=daysInMonth(currentYear,currentMonth);
+  const t=new Date();
+  const isCurrent=t.getFullYear()===currentYear&&t.getMonth()+1===currentMonth;
+  let html='';
+
+  for(let d=1; d<=days; d++){
+    const day=getDayData(currentYear,currentMonth,d);
+    const inc=sumIncome(day), exp=sumExpense(day), net=inc-exp, dow=new Date(currentYear,currentMonth-1,d).getDay();
+
+    html += `
+      <div class="day-card ${isCurrent&&d===t.getDate()?'open':''}" id="day_${d}">
+        <div class="day-head" onclick="toggleDay(${d})">
+          <div class="day-left">
+            <div class="num">${d}</div>
+            <div>
+              <div style="font-weight:900">週${WEEKDAYS[dow]} ${isCurrent&&d===t.getDate()?'<span class="tag">今天</span>':''}</div>
+              <div class="meta">${dow===0||dow===6?'週末':'平日'}｜收入與支出可同日並存</div>
+            </div>
+          </div>
+          <div class="amt">
+            <div class="green">收 ${fmt(inc)}</div>
+            <div class="red">支 ${fmt(exp)}</div>
+            <div class="${net>=0?'green':'red'}">淨 ${fmt(net)}</div>
+          </div>
+        </div>
+
+        <div class="day-body">
+          <div class="row-head">
+            <div class="pill">收入記錄</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="toggle-link" onclick="event.stopPropagation(); return false;">輸入後自動收合</button>
+              <button class="small-btn greenish" onclick="event.stopPropagation(); addIncome(${d})">＋新增收入</button>
+            </div>
+          </div>
+
+          <div id="section_${d}_income">
+            ${(day.incomes||[]).length===0?'<div class="mini">今天還沒有收入紀錄</div>':''}
+            ${(day.incomes||[]).map((x,i)=>`
+              ${isItemCollapsed(d,'income',i) ? `
+                <div class="entry collapsed-entry">
+                  <div class="entry-summary">
+                    <div class="entry-summary-left">
+                      <div class="entry-summary-title">${escapeHtml(x.category||'收入')}</div>
+                      <div class="entry-summary-sub">${x.memo ? escapeHtml(x.memo) : '已完成輸入'}</div>
+                    </div>
+                    <div class="entry-summary-actions">
+                      <div class="entry-summary-amount green">${fmt(x.amount||0)}</div>
+                      <button class="mini-btn" onclick="toggleItemCollapsed(${d},'income',${i})">編輯</button>
+                      <button class="delete-btn" onclick="deleteIncome(${d},${i})">✕</button>
+                    </div>
+                  </div>
+                  <div class="alloc-mini">
+                    ${(() => {
+                      const split=calcEnvelopeSplit(x.amount||0);
+                      return `
+                        <div class="alloc-mini-grid">
+                          <div class="alloc-mini-item"><span>固定支出 57%</span><strong>${fmt(split.fixed)}</strong></div>
+                          <div class="alloc-mini-item"><span>存款 20%</span><strong>${fmt(split.save)}</strong></div>
+                          <div class="alloc-mini-item"><span>生活費 15%</span><strong>${fmt(split.life)}</strong></div>
+                          <div class="alloc-mini-item"><span>備用金 8%</span><strong>${fmt(split.reserve)}</strong></div>
+                        </div>`;
+                    })()}
+                  </div>
+                </div>
+              ` : `
+                <div class="entry">
+                  <div class="entry-grid">
+                    <select class="a stable-select" onchange="updateIncome(${d},${i},'category',this.value)">${INCOME_CATEGORIES.map(c=>`<option ${c===x.category?'selected':''}>${c}</option>`).join('')}</select>
+                    <input class="b stable-input" type="number" inputmode="numeric" value="${Number(x.amount||0)}" onchange="updateIncome(${d},${i},'amount',this.value)" placeholder="金額">
+                    <input class="c stable-input" type="text" value="${escapeHtml(x.memo||'')}" onchange="updateIncome(${d},${i},'memo',this.value)" placeholder="備註">
+                    <button class="delete-btn d" onclick="deleteIncome(${d},${i})">✕</button>
+                  </div>
+                </div>
+              `}
+            `).join('')}
+          </div>
+
+          <div class="row-head" style="margin-top:14px">
+            <div class="pill">支出記錄</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button class="toggle-link" onclick="event.stopPropagation(); return false;">輸入後自動收合</button>
+              <button class="small-btn redish" onclick="event.stopPropagation(); addExpense(${d})">＋新增支出</button>
+            </div>
+          </div>
+
+          <div id="section_${d}_expense">
+            ${(day.expenses||[]).length===0?'<div class="mini">今天還沒有支出紀錄</div>':''}
+            ${(day.expenses||[]).map((x,i)=>`
+              ${isItemCollapsed(d,'expense',i) ? `
+                <div class="entry collapsed-entry">
+                  <div class="entry-summary">
+                    <div class="entry-summary-left">
+                      <div class="entry-summary-title">${escapeHtml(x.category||'支出')}</div>
+                      <div class="entry-summary-sub">${x.memo ? escapeHtml(x.memo) : (x.fixed ? '固定支出' : '已完成輸入')}</div>
+                    </div>
+                    <div class="entry-summary-actions">
+                      <div class="entry-summary-amount red">${fmt(x.amount||0)}</div>
+                      <button class="mini-btn" onclick="toggleItemCollapsed(${d},'expense',${i})">編輯</button>
+                      <button class="delete-btn" onclick="deleteExpense(${d},${i})">✕</button>
+                    </div>
+                  </div>
+                  ${x.fixed?`<div class="check-row"><input type="checkbox" ${x.paid?'checked':''} onchange="toggleFixedPaid(${d},${i},this.checked)"><span>固定支出已繳</span></div>`:''}
+                </div>
+              ` : `
+                <div class="entry">
+                  <div class="entry-grid expense">
+                    <select class="a stable-select" onchange="updateExpense(${d},${i},'category',this.value)">${EXPENSE_CATEGORIES.map(c=>`<option ${c===x.category?'selected':''}>${c}</option>`).join('')}</select>
+                    <input class="b stable-input" type="number" inputmode="numeric" value="${Number(x.amount||0)}" onchange="updateExpense(${d},${i},'amount',this.value)" placeholder="金額">
+                    <button class="delete-btn c" onclick="deleteExpense(${d},${i})">✕</button>
+                  </div>
+                  <input class="stable-input" style="margin-top:8px" type="text" value="${escapeHtml(x.memo||'')}" onchange="updateExpense(${d},${i},'memo',this.value)" placeholder="備註">
+                  ${x.fixed?`<div class="check-row"><input type="checkbox" ${x.paid?'checked':''} onchange="toggleFixedPaid(${d},${i},this.checked)"><span>固定支出已繳</span></div>`:''}
+                  ${x.fixed?'<div class="mini" style="margin-top:6px">這筆是固定支出帶入</div>':''}
+                </div>
+              `}
+            `).join('')}
+          </div>
+
+          <div class="mini" style="margin-top:12px">欄位輸入完成後點一下畫面其他地方，就會儲存並更新金額。</div>
+          <div class="mini" style="margin-top:6px">每日備註</div>
+          <textarea class="stable-input" onchange="updateNote(${d},this.value)" placeholder="今天的工作狀況、特殊花費、提醒...">${day.note||''}</textarea>
+        </div>
+      </div>`;
+  }
+
+  document.getElementById('dayList').innerHTML=html;
+}
+
+document.getElementById('restoreInput').addEventListener('change', function(){
+  const file=this.files&&this.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const parsed=JSON.parse(e.target.result);
+      if(!confirm('確定要覆蓋目前資料嗎？')) return;
+      db=parsed;
+      ensureDefaults();
+      migrateDB();
+      recalcAllData(false);
+      saveDB();
+      render();
+      alert('還原完成');
+    }catch(err){ alert('備份檔格式不正確'); }
+  };
+  reader.readAsText(file);
+});
+document.getElementById('searchInput').addEventListener('input', runSearch);
+window.addEventListener('resize', updateSummaryOnly);
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  });
+}
+
+render();
+</script>
+</body>
+</html>
